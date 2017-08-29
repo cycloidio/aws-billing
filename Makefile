@@ -7,6 +7,7 @@ GOFILES_NOVENDOR := $(shell find . -type f -name '*.go' -not -path "./vendor/*" 
 .PHONY: get-deps
 get-deps:
 	go get -t ./...
+	go get golang.org/x/tools/cmd/goimports
 
 .PHONY: clean
 clean:
@@ -33,9 +34,9 @@ test:
 .PHONY: fmtcheck
 fmtcheck:
 	@if [ "$(shell goimports -l $(GOFILES_NOVENDOR) | wc -l)" != "0" ]; then \
-		echo "Files missing go fmt: $(shell goimports -l $(GOFILES_NOVENDOR))"; exit 2; \
+		printf "Files missing goimports: $(shell goimports -l $(GOFILES_NOVENDOR))\n"; exit 2; \
 	else \
-	    echo -e "ok\tall files passed go fmt"; \
+	    printf "ok\tall files passed goimports\n"; \
 	fi
 
 .PHONY: vetcheck
