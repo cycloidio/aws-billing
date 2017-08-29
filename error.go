@@ -1,63 +1,79 @@
-package raws
+package billing
 
-import (
-	"fmt"
+const (
+	CSVErrorType = iota
+	ConvertErrorType
+	DynamoDBErrorType
+	S3ErrorType
 )
 
-// Interface defining an API error, this is handy as the region and service are saved
-//
-// Note: Currently the service is not that necessary, but it could become useful to have as the project evolves and
-// start making more complex calls to various endpoints.
-type Err interface {
-	error
-	Region() string
-	Service() string
+type BillingError struct {
+	Err  error
+	flag int
 }
 
-// RawsErr type satisfies the standard error interface, thus allowing us to return an error when doing multiple call via
-// the go-SDK, even though multiple errors are met; which is why APIErrs save those more specific errors.
-type Errs []Err
+func (b BillingError) Error() string {
+	return b.Err.Error()
+}
 
-// NewAPIError returns an Err object filled with the error faced, the region and the service name.
-func NewAPIError(region string, service string, e error) Err {
-	return &callErr{
-		region:  region,
-		service: service,
-		err:     e,
+func NewBillingError(err error, flag int) error {
+	return &BillingError{
+		Err:  err,
+		flag: flag,
 	}
 }
 
-// Error rerturns a string which summarize how many errors happened, in which regions and for which services.
-func (e Errs) Error() string {
-	var output [][]string
-
-	for _, err := range e {
-		output = append(output, []string{err.Region(), err.Service()})
+func NewCSVError(err error) error {
+	return &BillingError{
+		Err:  err,
+		flag: CSVErrorType,
 	}
-	return fmt.Sprintf("%d error(s) occured: %s", len(e), output)
 }
 
-// Error returns a string containing the region, service as well as the original API error message.
-func (e *callErr) Error() string {
-	return fmt.Sprintf("%s: error while using '%s' service - %s",
-		e.region,
-		e.service,
-		e.err.Error())
+func NewConvertError(err error) error {
+	return &BillingError{
+		Err:  err,
+		flag: ConvertErrorType,
+	}
 }
 
-// Returns the region of the error
-func (e *callErr) Region() string {
-	return e.region
+func NewDynamoDBError(err error) error {
+	return &BillingError{
+		Err:  err,
+		flag: DynamoDBErrorType,
+	}
 }
 
-// Returns the service name of the error
-func (e *callErr) Service() string {
-	return e.service
+func NewS3Error(err error) error {
+	return &BillingError{
+		Err:  err,
+		flag: S3ErrorType,
+	}
+}
+func IsConvertError(err error) bool {
+	if v, ok := err.(*BillingError); ok {
+		return v.flag == ConvertErrorType
+	}
+	return false
 }
 
-type callErr struct {
-	Err
-	err     error
-	region  string
-	service string
+func IsCSVError(err error) bool {
+	if v, ok := err.(*BillingError); ok {
+		return v.flag == CSVErrorType
+	}
+	return false
+}
+
+func IsDynamoDBError(err error) bool {
+	if v, ok := err.(*BillingError); ok {
+		return v.flag == DynamoDBErrorType
+	}
+	return false
+}
+
+func IsS3Error(err error) bool {
+	if v, ok := err.(*BillingError); ok {
+		return v.flag == S3ErrorType
+	}
+	return false
 }

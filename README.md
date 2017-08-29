@@ -1,65 +1,87 @@
-# Raws: AWS Reader [![Build Status](https://travis-ci.org/cycloidio/raws.svg?branch=master)](https://travis-ci.org/cycloidio/raws) [![Coverage Status](https://coveralls.io/repos/github/cycloidio/raws/badge.svg)](https://coveralls.io/github/cycloidio/raws)
+# Aws-billing: AWS billing importer [![Build Status](https://travis-ci.org/cycloidio/aws-billing.svg?branch=master)](https://travis-ci.org/cycloidio/aws-billing) [![Coverage Status](https://coveralls.io/repos/github/cycloidio/aws-billing/badge.svg)](https://coveralls.io/github/cycloidio/aws-billing)
 
-## What is Raws?
+## What is AWS-Billing?
 
-Raws is a golang project helping to get information from AWS.
+AWS-Billing is a project aiming to make the download & import of AWS billing data into a backend.
 
-It currently provides simplicity - one package vs multitude in AWS - as well as multi-region management - all calls are done for each selected region(s).
-Region's parameter also supports globbing, thus allowing to fetch data from all eu with: 'eu-\*' or all eu-west with 'eu-west-\*'
+Currently the project provides both interfaces as well as their implementations, the idea behind however is to make it more like a library allowing everyone to import their data into the backend that they want. The implemention would then become an 'extra' or example of the overall project.
 
-Currently only a couple of the most used information is gathered, but adding extra calls should not be complicated, as they all have the same logic.
+The main components are:
+* Checker - check if the data needs to be imported
+* Downloader - download & unzip data from S3
+* Injector - responsible for injecting the data into the backend
+* Loader - read the data and uses the injector in order to load it progressively
 
-Any contributions are welcome!
+A last component is present:
+* Manager - a wrapper of all the previous component
+
+Please see notes regarding the Manager.
+
+Any contributions are welcome as usually!
 
 ## Getting started
 
-### Import the library
+### Import the library/code
 To get started, you can download/include the library to your code:
 ```go
-import 	"github.com/cycloidio/raws"
+import 	"github.com/cycloidio/aws-billing"
 ```
 
-### Create a reader
-```go
-var config *aws.Config = nil
-var accessKey string = "xxxxxxxxxxxxxxxx"
-var secretKey string = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-var region []string = []string{"eu-*"}
+### Create a manager
 
-c, err := raws.NewAWSReader(accessKey, secretKey, region, config)
+As mentioned previously the Manager isn't necessary, you could skip it and create individual components.
+```go
+dynamoDBAccount := &billing.AwsConfig{
+	AccessKey: "xxxxxxxxxxxxxxxxxx,
+	SecretKey: "xxxxxxxxxxxxxxxxxx,
+	Region:    "xxxxxxxxx",
+}
+s3Account := &billing.AwsConfig{
+	AccessKey: "xxxxxxxxxxxxxxxxxx,
+	SecretKey: "xxxxxxxxxxxxxxxxxx,
+	Region:    "xxxxxxxxx",
+}
+
+s3Bucket := "YOUR-BUCKET-NAME"
+
+m, err := billing.NewManager(dynamoDBAccount, s3Account)
 if err != nil {
-	fmt.Printf("Error while getting NewConnector: %s\n", err.Error())
+	fmt.Println(err)
+	return err
+}
+
+err = m.ImportFromS3("2017-08", s3Bucket)
+if err != nil {
+	fmt.Println(err)
 	return err
 }
 ```
 
-### Start making call
+### Create sets of components
 
-Errors are intentionally ignored in this example, no inputs are provided to those calls, even though one could.
+Instead of using the manager, the components could also be instanciated individually and used under your own logic.
 
-```go
-elbs, _ := c.GetLoadBalancersV2(nil)
-fmt.Println(elbs)
-instances, _ := c.GetInstances(nil)
-fmt.Println(instances)
-vpcs, _ := c.GetVpcs(nil)
-fmt.Println(vpcs)
-```
+### Makefile
 
-You can also take a look at the [example file](example/main.go).
+In order to use the project a handful set of rules have been provided:
 
-### Enjoy
-That's it! Nothing more, nothing less.
+* cov: display the code coverage in CLI
+* htmlcov: display the code coverage in a browser
+* test: check that the project's test are passing
+* fmtcheck: check that all files passe goimports format checks
+* vetcheck: check that all files passe vet checks
 
 ## Notes
 
-### YOUR data
-By default the library only returns data that belongs to you, therefore snapshots, AMI, etc are only the one that you owned and not all available objects.
+### Billing data type
+Currently only the detailed-billing data with tags and resources is being imported.
 
-This could be fixed later on depending on the needs.
+### Limitations
+There is currently a too strong dependency around the backend from the `Checker` component.
+The goal is to move the dependency towards the injector, in order to make it easier to use/switch backend if need be.
 
-### Tags everywhere?
-Because the library currently simply make the call as a forwarder, it does not provide more complex calls, to return more complex data. Due to that, there are also elements to keep in mind, some calls relative to load balancer, or RDS return only the objects without tags, other calls need to be done to get those tags per resource. 
+### Manager
+The manager isn't required in the library itself, it simply provides an implementation/example of how the components interract and make it easy to use. 
 
 ## License
 
