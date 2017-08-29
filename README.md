@@ -83,6 +83,9 @@ The goal is to move the dependency towards the injector, in order to make it eas
 ### Manager
 The manager isn't required in the library itself, it simply provides an implementation/example of how the components interract and make it easy to use. 
 
+### Issues/improvements
+Please check the issues section of this repository for more information.
+
 ## License
 
 Please see [LICENSE](LICENSE).
